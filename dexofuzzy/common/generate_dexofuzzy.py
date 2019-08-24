@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2019 ESTsecurity
 #
-# This file is part of dexofuzzy.
+# This file is part of Dexofuzzy.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,41 +22,53 @@
 '''
 # Default packages
 import ctypes
-import inspect
-import logging
-import os
 import struct
-from traceback import format_exc
+import sys
+
+# 3rd-party packages
 
 # Internal packages
+
+if sys.platform == "win32":
+    import dexofuzzy.bin as ssdeep
+else:
+    import ssdeep
 
 # 3rd-party packages
 
 
-class ExtractOpcode:
-    def __init__(self, log_dir="./"):
-        self.method_opcode_sequence = []
+class GenerateDexofuzzyError(Exception):
+    pass
 
-        log_dir = os.path.join(os.getcwd(), log_dir)
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
 
-        self.logger = logging.getLogger(__name__)
-        logging.basicConfig(filename="dexofuzzy.log",
-                            level=logging.INFO,
-                            format="%(asctime)s %(levelname)-8s %(message)s",
-                            datefmt="%m-%d %H:%M")
+class GenerateDexofuzzy:
+    def __init__(self):
+        self.method_opcode_sequence_list = []
 
-    def analyze_dex(self, dex):
+    def generate_dexofuzzy(self, dex):
+        if self.extract_opcode(dex):
+            feature = ""
+            for opcode in self.method_opcode_sequence_list:
+                feature += ssdeep.hash(opcode, encoding="UTF-8").split(":")[1]
+
+            dexofuzzy = ssdeep.hash(feature, encoding="UTF-8")
+
+            return dexofuzzy
+
+        else:
+            return None
+
+    def extract_opcode(self, dex):
         header = {}
         string_ids = []
         type_ids = []
         class_defs = []
 
-        if((dex[0:8].find(b"dex\n035") == 0) or
+        if (isinstance(dex, bytes) and (
+           (dex[0:8].find(b"dex\n035") == 0) or
            (dex[0:8].find(b"dex\n036") == 0) or
            (dex[0:8].find(b"dex\n037") == 0) or
-           (dex[0:8].find(b"dex\n038") == 0)):
+           (dex[0:8].find(b"dex\n038") == 0))):
 
             header = self.__get_header(dex)
             string_ids = self.__get_string_ids(dex, header)
@@ -64,14 +76,10 @@ class ExtractOpcode:
             class_defs = self.__get_class_defs(dex, header)
             self.__dex_to_smali(dex, header, string_ids, type_ids, class_defs)
 
-            return self.method_opcode_sequence
+            return self.method_opcode_sequence_list
 
         else:
-            self.logger.error("File isn't dex file : %s " % dex[0:8])
-            self.logger.error(
-                            "%s : %s" % (inspect.stack()[0][3], format_exc()))
-
-            return self.method_opcode_sequence
+            raise GenerateDexofuzzyError("The file isn't dex format")
 
     def __get_header(self, dex):
         magic_number = dex[0x00:0x08]
@@ -236,8 +244,8 @@ class ExtractOpcode:
     def __dex_to_smali(self, dex, header, string_ids, type_ids, class_defs):
         class_defs_size = header["class_defs_size"]
         for index in range(class_defs_size):
-            class_str = self.__get_string_from_type_id(string_ids, type_ids,
-                                                       class_defs[index][0])
+            class_str = self.__get_string_from_type_id(
+                                    string_ids, type_ids, class_defs[index][0])
 
             if class_str.find(b"Landroid/support/") == -1:
                 if class_defs[index][6] > 0:
@@ -308,7 +316,7 @@ class ExtractOpcode:
                                             code_items["insns_size"] * 2).value
                 bytecode_offset = current_offset
                 opcodes = self.__bytecode(dex, bytecode_offset, bytecode_size)
-                self.method_opcode_sequence.append(opcodes)
+                self.method_opcode_sequence_list.append(opcodes)
 
         return offset
 
@@ -1354,10 +1362,7 @@ class ExtractOpcode:
                     break
 
         except Exception:
-            self.logger.error("Unable to extract opcode")
-            self.logger.error("%s : %s" % (inspect.stack()[0][3],
-                                           format_exc()))
-
+            raise GenerateDexofuzzyError("Unable to extract opcode")
             return opcode
 
         return opcode
@@ -1369,25 +1374,22 @@ class ExtractOpcode:
                 offset += 1
 
             elif bytecode[offset] == 0x01:
-                offset = self.__format_31t_packed_switch_payload(bytecode,
-                                                                 offset)
+                offset = self.__format_31t_packed_switch_payload(
+                                                            bytecode, offset)
 
             elif bytecode[offset] == 0x02:
-                offset = self.__format_31t_sparse_switch_payload(bytecode,
-                                                                 offset)
+                offset = self.__format_31t_sparse_switch_payload(
+                                                            bytecode, offset)
 
             elif bytecode[offset] == 0x03:
-                offset = self.__format_31t_fill_array_data_payload(bytecode,
-                                                                   offset)
+                offset = self.__format_31t_fill_array_data_payload(
+                                                            bytecode, offset)
 
             else:
                 offset += 1
 
         except Exception:
-            self.logger.error("Unable to extract format_10x")
-            self.logger.error(
-                            "%s : %s" % (inspect.stack()[0][3], format_exc()))
-
+            raise GenerateDexofuzzyError("Unable to extract format_10x")
             return offset
 
         return offset
@@ -1473,21 +1475,21 @@ class ExtractOpcode:
         shift = bytecode[offset] << 8
         offset += 1
         element_width = shift | bytecode[offset]
-        element_width = struct.unpack("<H",
-                                      struct.pack(">H", element_width))[0]
+        element_width = struct.unpack(
+                                    "<H", struct.pack(">H", element_width))[0]
         offset += 1
         shift = bytecode[offset] << 8
         offset += 1
         size = shift | bytecode[offset]
         size = struct.unpack("<H", struct.pack(">H", size))[0]
         offset += 1
-        offset_verification = (offset-6)+(int((size*element_width+1)/2+4)*2)
+        offset_check = (offset-6)+(int((size*element_width+1)/2+4)*2)
         offset += 2
 
         offset += (1*size*element_width)
 
-        if offset != offset_verification:
-            return offset_verification
+        if offset != offset_check:
+            return offset_check
 
         return offset
 
@@ -1496,13 +1498,13 @@ class ExtractOpcode:
         shift = bytecode[offset] << 8
         size = shift | bytecode[offset+1]
         size = struct.unpack("<H", struct.pack(">H", size))[0]
-        offset_verification = (offset-2)+(int((size*2)+4)*2)
+        offset_check = (offset-2)+(int((size*2)+4)*2)
         offset += 6
 
         offset += (4*size)
 
-        if offset != offset_verification:
-            return offset_verification
+        if offset != offset_check:
+            return offset_check
 
         return offset
 
@@ -1511,14 +1513,14 @@ class ExtractOpcode:
         shift = bytecode[offset] << 8
         size = shift | bytecode[offset+1]
         size = struct.unpack("<H", struct.pack(">H", size))[0]
-        offset_verification = (offset-2)+(int((size*4)+2)*2)
+        offset_check = (offset-2)+(int((size*4)+2)*2)
         offset += 2
 
         offset += (4*size)
         offset += (4*size)
 
-        if offset != offset_verification:
-            return offset_verification
+        if offset != offset_check:
+            return offset_check
 
         return offset
 

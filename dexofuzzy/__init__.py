@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2019 ESTsecurity
 #
-# This file is part of dexofuzzy.
+# This file is part of Dexofuzzy.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,29 +18,35 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 '''
-
+This is a Python wrapper for ssdeep by Jesse Kornblum (http://ssdeep.sourceforge.net).
+Inspired by python-ssdeep (https://github.com/DinoTools/python-ssdeep).
 '''
 # Default packages
+import sys
 
 # Internal packages
-from dexofuzzy.generate_dexofuzzy import GenerateDexofuzzy
+from .common.generate_dexofuzzy import GenerateDexofuzzy
+from .console import Dexofuzzy
+
+if sys.platform == "win32":
+    import dexofuzzy.bin as ssdeep
+else:
+    import ssdeep
 
 # 3rd-party packages
 
 
 __title__ = 'dexofuzzy'
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 __license__ = 'GNU General Public License v2 or later (GPLv2+)'
 __copyright__ = 'Copyright (C) 2019 ESTsecurity'
 
 
-def hash(file_path):
+def hash(dex_data):
     generateDexoFuzzy = GenerateDexofuzzy()
-    report = generateDexoFuzzy.generate_dexofuzzy(file_path)
-    return report["dexofuzzy"]
+    dexofuzzy = generateDexoFuzzy.generate_dexofuzzy(dex_data)
+    return dexofuzzy
 
 
 def compare(dexofuzzy_1, dexofuzzy_2):
-    generateDexoFuzzy = GenerateDexofuzzy()
-    score = generateDexoFuzzy.get_dexofuzzy_compare(dexofuzzy_1, dexofuzzy_2)
-    return score
+    return ssdeep.compare(dexofuzzy_1, dexofuzzy_2)

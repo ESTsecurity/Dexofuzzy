@@ -30,6 +30,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'ssdeep; platform_system!="Windows"',
+        'filetype',
     ],
     python_requires='>=3',
     entry_points={
