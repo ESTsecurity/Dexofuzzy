@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-#
 # Copyright (C) 2019 ESTsecurity
 #
 # This file is part of Dexofuzzy.
@@ -21,18 +19,19 @@
 
 '''
 # Default packages
+import argparse
+import csv
 import hashlib
+import inspect
+import json
 import logging
 import os
 import sys
-import zipfile
-from contextlib import closing
+import time
 from traceback import format_exc
 
-# 3rd-party packages
-
 # Internal packages
-from dexofuzzy import GenerateDexofuzzy
+from dexofuzzy.core.generator import GenerateDexofuzzy
 
 if sys.platform == "win32":
     import dexofuzzy.bin as ssdeep
@@ -40,32 +39,148 @@ else:
     import ssdeep
 
 
-class Dexofuzzy:
-    def __init__(self, args):
-        self.args = args
+class Command:
+    def __init__(self):
+        self.args = None
 
-    def log_dexofuzzy(self, message=None, file=None):
+    def console(self):
+        parser = argparse.ArgumentParser(
+                prog="dexofuzzy",
+                description=("Dexofuzzy - Dalvik EXecutable Opcode Fuzzyhash"),
+                add_help=True)
+
+        parser.add_argument(
+                    "-f", "--file", metavar='SAMPLE_FILENAME',
+                    help="the sample to extract dexofuzzy")
+        parser.add_argument(
+                    "-d", "--directory", metavar='SAMPLE_DIRECTORY',
+                    help="the directory of samples to extract dexofuzzy")
+
+        parser.add_argument(
+                    "-m", "--method-fuzzy", action="store_true",
+                    help="extract the fuzzyhash based on method of the sample "
+                    + "(default use the -f or -d option)")
+        parser.add_argument(
+                    "-g", "--clustering", metavar='N', type=int,
+                    help="N-gram cluster the dexofuzzy of the sample "
+                    + "(default use the -d option)")
+
+        parser.add_argument(
+                    "-s", "--score", metavar='DEXOFUZZY', nargs=2,
+                    help="score the dexofuzzy of the sample")
+
+        parser.add_argument(
+                    "-c", "--csv", metavar='CSV_FILENAME',
+                    help="output as CSV format")
+        parser.add_argument(
+                    "-j", "--json", metavar='JSON_FILENAME',
+                    help="output as json format " +
+                    "(include method fuzzy or clustering)")
+        parser.add_argument(
+                    "-l", "--error-log", action="store_true",
+                    help="output the error log")
+
+        if len(sys.argv) == 1:
+            parser.print_help()
+            return
+
+        self.args = parser.parse_args()
+        dexofuzzy_list = []
+
+        start = time.time()
+
+        if self.args.score:
+            print(self.__get_dexofuzzy_compare(self.args.score[0],
+                                               self.args.score[1]))
+
+        if self.args.directory:
+            for result in self.__search_directory(self.args.directory):
+                if result is not None:
+                    print("{},{},{},{},{}".format(
+                                    result["file_name"], result["file_sha256"],
+                                    result["file_size"], result["opcode_hash"],
+                                    result["dexofuzzy"]))
+
+                    if self.args.method_fuzzy:
+                        print(json.dumps(result["method_fuzzy"], indent=4))
+
+                    dexofuzzy_list.append(result)
+
+        if self.args.file:
+            result = self.__search_file(self.args.file)
+            if result is not None:
+                print("{},{},{},{},{}".format(
+                                    result["file_name"], result["file_sha256"],
+                                    result["file_size"], result["opcode_hash"],
+                                    result["dexofuzzy"]))
+
+                if self.args.method_fuzzy:
+                    print(json.dumps(result["method_fuzzy"], indent=4))
+
+                dexofuzzy_list.append(result)
+
+        if self.args.clustering:
+            dexofuzzy_list = self.__cluster_dexofuzzy(dexofuzzy_list,
+                                                      self.args.clustering)
+            print(json.dumps(dexofuzzy_list, indent=4))
+
+        if self.args.csv:
+            try:
+                with open(self.args.csv, "w", newline="") as fd:
+                    fieldnames = ["file_name", "file_sha256", "file_size",
+                                  "opcode_hash", "dexofuzzy"]
+
+                    writer = csv.DictWriter(fd, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for output in dexofuzzy_list:
+                        row = {}
+                        row["file_name"] = output["file_name"]
+                        row["file_sha256"] = output["file_sha256"]
+                        row["file_size"] = output["file_size"]
+                        row["opcode_hash"] = output["opcode_hash"]
+                        row["dexofuzzy"] = output["dexofuzzy"]
+                        writer.writerow(row)
+
+            except Exception:
+                print("{} : {}".format((inspect.stack()[0][3], format_exc())))
+                return False
+
+        if self.args.json:
+            try:
+                with open(self.args.json, "w") as fd:
+                    json.dump(dexofuzzy_list, fd, indent=4)
+
+            except Exception:
+                print("{} : {}".format((inspect.stack()[0][3], format_exc())))
+                return False
+
+        end = time.time()
+        print("Running Time : {}".format(str((end - start))))
+
+    def __log_dexofuzzy(self, message=None, file=None):
         if self.args.error_log:
             self.logger = logging.getLogger(__name__)
             logging.basicConfig(filename="dexofuzzy_error.log",
                                 level=logging.INFO,
                                 format="%(message)s")
+
             if file:
                 file = os.path.basename(file)
-                self.logger.error(message + " : %s" % file)
+                self.logger.error(message + " : {}".format(file))
+
             else:
                 self.logger.error(message)
 
-            self.logger.error("%s" % (format_exc()))
+            self.logger.error("{}".format(format_exc()))
 
-    def get_dexofuzzy_compare(self, dexofuzzy_1, dexofuzzy_2):
+    def __get_dexofuzzy_compare(self, dexofuzzy_1, dexofuzzy_2):
         try:
             return ssdeep.compare(dexofuzzy_1, dexofuzzy_2)
 
         except Exception:
-            self.log_dexofuzzy()
+            self.__log_dexofuzzy()
 
-    def search_directory(self, sample_dir):
+    def __search_directory(self, sample_dir):
         if os.path.isdir(sample_dir) is False:
             print("The directory not found")
 
@@ -88,7 +203,7 @@ class Dexofuzzy:
 
                     yield result
 
-    def search_file(self, sample_file):
+    def __search_file(self, sample_file):
         if os.path.isfile(sample_file) is False:
             print("The file not found")
 
@@ -109,7 +224,7 @@ class Dexofuzzy:
 
     def __get_sha256(self, file_path):
         if not os.path.exists(file_path):
-            self.log_dexofuzzy(message="The file not found", file=file_path)
+            self.__log_dexofuzzy(message="The file not found", file=file_path)
 
         try:
             with open(file_path, "rb") as fd:
@@ -120,7 +235,8 @@ class Dexofuzzy:
             return sha256
 
         except Exception:
-            self.log_dexofuzzy(message="Unable to get sha256", file=file_path)
+            self.__log_dexofuzzy(message="Unable to get sha256",
+                                 file=file_path)
 
     def __get_file_size(self, file_path):
         try:
@@ -130,12 +246,13 @@ class Dexofuzzy:
             return str(file_size)
 
         except Exception:
-            self.log_dexofuzzy(
+            self.__log_dexofuzzy(
                             message="Unable to get file size", file=file_path)
 
     def __get_dexofuzzy(self, file_path):
         try:
-            opcode_list = self.__extract_dexfile_opcode(file_path)
+            generateDexofuzzy = GenerateDexofuzzy()
+            opcode_list = generateDexofuzzy.extract_dexfile_opcode(file_path)
 
             if opcode_list:
                 opcode_sum = feature = ""
@@ -158,94 +275,10 @@ class Dexofuzzy:
                 return result
 
         except Exception:
-            self.log_dexofuzzy(
+            self.__log_dexofuzzy(
                         message="Unable to generate dexofuzzy", file=file_path)
 
-    def __extract_dexfile_opcode(self, file_path):
-        try:
-            filetype = self.__check_file_type(file_path)
-
-            if filetype == "application/zip":
-                method_opcode_sequence_list = []
-
-                for dex_data in self.__extract_dexfile(file_path):
-                    generateDexofuzzy = GenerateDexofuzzy()
-                    opcodes = generateDexofuzzy.extract_opcode(dex_data)
-                    method_opcode_sequence_list += opcodes
-
-                return method_opcode_sequence_list
-
-            elif filetype == "application/x-dex":
-                with open(file_path, "rb") as fd:
-                    dex_data = fd.read()
-
-                method_opcode_sequence_list = []
-                generateDexofuzzy = GenerateDexofuzzy()
-                opcodes = generateDexofuzzy.extract_opcode(dex_data)
-                method_opcode_sequence_list = opcodes
-
-                return method_opcode_sequence_list
-
-            else:
-                self.log_dexofuzzy(
-                    message="The file format isn't supported", file=file_path)
-
-        except Exception:
-            self.log_dexofuzzy(
-                message="Unable to extract dexfile opcode", file=file_path)
-
-    def __extract_dexfile(self, file_path):
-        try:
-            dex_list = []
-            with closing(zipfile.ZipFile(file_path)) as ZipData:
-                for info in ZipData.infolist():
-                    if(info.filename.startswith("classes") and
-                       info.filename.endswith(".dex")):
-                        dex_list.append(info.filename)
-
-                if not dex_list:
-                    self.log_dexofuzzy(
-                        message="Could not find dex format in APK file",
-                        file=file_path)
-                    return
-
-                for dex_name in sorted(dex_list):
-                    with ZipData.open(dex_name) as dex:
-                        yield dex.read()
-
-        except Exception:
-            self.log_dexofuzzy(
-                        message="Unable to extract dex file", file=file_path)
-
-    def __check_file_type(self, file_path):
-        try:
-            with open(file_path, "rb") as fd:
-                raw_data = fd.read(8)
-
-            if((raw_data[0:4].find(b'PK\x03\x04') == 0) or
-               (raw_data[0:4].find(b'PK\x03\x06') == 0) or
-               (raw_data[0:4].find(b'PK\x03\x08') == 0) or
-               (raw_data[0:4].find(b'PK\x05\x04') == 0) or
-               (raw_data[0:4].find(b'PK\x05\x06') == 0) or
-               (raw_data[0:4].find(b'PK\x05\x08') == 0) or
-               (raw_data[0:4].find(b'PK\x07\x04') == 0) or
-               (raw_data[0:4].find(b'PK\x07\x06') == 0) or
-               (raw_data[0:4].find(b'PK\x07\x08') == 0)):
-
-                return "application/zip"
-
-            elif((raw_data[0:8].find(b'dex\n035') == 0) or
-                 (raw_data[0:8].find(b'dex\n036') == 0) or
-                 (raw_data[0:8].find(b'dex\n037') == 0) or
-                 (raw_data[0:8].find(b'dex\n038') == 0)):
-
-                return "application/x-dex"
-
-        except Exception:
-            self.log_dexofuzzy(
-                        message="Unable to check file type", file=file_path)
-
-    def cluster_dexofuzzy(self, dexofuzzy_list, N):
+    def __cluster_dexofuzzy(self, dexofuzzy_list, N):
         try:
             sources = destinations = dexofuzzy_list
             for source in sources:
@@ -269,7 +302,7 @@ class Dexofuzzy:
             return sources
 
         except Exception:
-            self.log_dexofuzzy(message="Unable to cluster dexofuzzy")
+            self.__log_dexofuzzy(message="Unable to cluster dexofuzzy")
 
     def __search_n_gram(self, dexofuzzy_1, dexofuzzy_2, N):
         try:
@@ -279,4 +312,4 @@ class Dexofuzzy:
                         return dexofuzzy_1[i:i+N]
 
         except Exception:
-            self.log_dexofuzzy(message="Unable to search n-gram")
+            self.__log_dexofuzzy(message="Unable to search n-gram")

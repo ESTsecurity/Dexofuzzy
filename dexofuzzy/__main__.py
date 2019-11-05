@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-#
 # Copyright (C) 2019 ESTsecurity
 #
 # This file is part of Dexofuzzy.
@@ -20,9 +18,8 @@
 '''
 
 '''
-# Default packages
-
 # Internal packages
-from .generate_dexofuzzy import GenerateDexofuzzy
+from dexofuzzy import cli
 
-# 3rd-party packages
+if __name__ == '__main__':
+    cli.execute_from_command_line()
