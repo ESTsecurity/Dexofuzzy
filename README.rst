@@ -1,6 +1,6 @@
-Dalvik EXecutable Opcode Fuzzy(Dexofuzzy) Hash
-==============================================
-Dexofuzzy is a similarity digest hash for Android. It extracts Opcode Sequence from Dex file based on Ssdeep and generates hash value that can be used for similarity comparison of Android App. Dexofuzzy created using Dex's opcode sequence can find similar apps by comparing hash values. 
+Dexofuzzy: Dalvik EXecutable Opcode Fuzzyhash
+=============================================
+Dexofuzzy is a similarity digest hash for Android. It extracts Opcode Sequence from Dex file based on Ssdeep and generates hash that can be used for similarity comparison of Android App. Dexofuzzy created using Dex's opcode sequence can find similar apps by comparing hash.
 
 .. image:: https://img.shields.io/badge/license-GPLv2%2B-green.svg
     :target: https://github.com/ESTsecurity/Dexofuzzy
@@ -10,10 +10,9 @@ Dexofuzzy is a similarity digest hash for Android. It extracts Opcode Sequence f
     :target: https://github.com/ESTsecurity/Dexofuzzy
     :alt: Latest Version
 
-.. image:: https://img.shields.io/badge/python-3%20%7C%203.4%20%7C%203.5%20%7C%203.6%20%7C%203.7-blue.svg
+.. image:: https://img.shields.io/badge/python-3%20%7C%203.4%20%7C%203.5%20%7C%203.6%20%7C%203.7%20%7C%203.8-blue.svg
     :target: https://pypi.python.org/pypi/ssdeep/
     :alt: Python Versions
-
 
 Requirements
 ------------
@@ -21,16 +20,16 @@ Dexofuzzy requires the following modules:
 
 * ssdeep 3.3 or later
 
-
 Install
 -------
 
-Install on Ubuntu 14.04 LTS, 16.04 LTS, 18.04 LTS
-.................................................
+Install on CentOS 6.10, 7.6, 8.0
+................................
 
 .. code-block:: console
 
-    $ apt-get install libffi-dev libfuzzy-dev
+    $ yum install epel-release
+    $ yum install libffi-devel ssdeep ssdeep-devel python3-pip python3-devel libtool 
     $ pip3 install dexofuzzy
 
 Install on Debian 8.11, 9.9, 10.0
@@ -50,18 +49,20 @@ Install on Linux Mint 3, 18.3, 19.1
     $ pip3 install setuptools wheel 
     $ pip3 install dexofuzzy
 
-Install on CentOS 6.10, 7.6
-...........................
+Install on Ubuntu 14.04 LTS, 16.04 LTS, 18.04 LTS
+.................................................
 
 .. code-block:: console
 
-    $ yum install libffi-devel ssdeep ssdeep-devel
+    $ apt-get install libffi-dev libfuzzy-dev
     $ pip3 install dexofuzzy
 
 Install on Windows 7, 10
 ........................
 
 * The ssdeep DLL binaries for Windows are included in ./dexofuzzy/bin/ directory.
+* included in (https://github.com/intezer/ssdeep-windows)
+* included in (https://github.com/MacDue/ssdeep-windows-32_64)
 
 .. code-block:: console
 
@@ -76,7 +77,7 @@ Usage
                     [-s DEXOFUZZY DEXOFUZZY] [-c CSV_FILENAME] [-j JSON_FILENAME]
                     [-l]
 
-   Dexofuzzy - Dalvik EXecutable Opcode Fuzzyhash v0.0.3
+   Dexofuzzy - Dalvik EXecutable Opcode Fuzzyhash v0.0.5
 
    optional arguments:
       -h, --help                     show this help message and exit
@@ -97,23 +98,21 @@ Usage
                                      (include method fuzzy or clustering)
       -l, --error-log                output the error log
 
-
-
 Output Format Example
 .....................
 * *FileName, FileSha256, FileSize, OpcodeHash, Dexofuzzy*
 
 .. code-block:: console
 
-    $ dexofuzzy -f Trojan.Android.SmsSpy.apk 
-    Trojan.Android.SmsSpy.apk,80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835,42959,94d36ca47485ca4b1d05f136fa4d9473bb2ed3f21b9621e4adce47acbc999c5d,48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q
+    $ dexofuzzy -f SAMPLE_FILE
+    sample.apk,80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835,42959,94d36ca47485ca4b1d05f136fa4d9473bb2ed3f21b9621e4adce47acbc999c5d,48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q
     Running Time : 0.016620635986328125
 
 * *Method Fuzzy*
 
 .. code-block:: console
 
-    $ dexofuzzy -f Trojan.Android.SmsSpy.apk -m 
+    $ dexofuzzy -f SAMPLE_FILE -m 
     80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835,80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835,42959,d89c3b2c2620b77b1c0df7ef66ecde6d70f30b8a3ca15c21ded4b1ce1e319d38,48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q
     [
         "3:mWc0R2gLkcT2AVA:mWc51cTnVA",
@@ -162,50 +161,65 @@ Output Format Example
             ...
         }
     ]    
-    
-    
+
 Python API
 ..........
 To compute a Dexofuzzy of ``dex file``, use ``hash`` function:
 
+* *hash(dex_binary_data)*
+
 .. code-block:: pycon
 
-     >>> import dexofuzzy
-     >>> with open('classes.dex', 'rb') as dex:
-     ...     dex_data = dex.read()
-     >>> hash1 = dexofuzzy.hash(dex_data)
-     >>> hash1
-     '48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q'
-     >>> with open('classes2.dex', 'rb') as dex:
-     ...     dex_data = dex.read()
-     >>> hash2 = dexofuzzy.hash(dex_data)
-     >>> hash2
-     '48:B2KmUCNc2FuGgy9fbdD7uPrEMc0HZj0/zeGn5:B2+Cap3y9pDHMHZ4/zeG5'
+    >>> import dexofuzzy
+    >>> with open('classes.dex', 'rb') as dex:
+    ...     dex_data = dex.read()
+    >>> dexofuzzy.hash(dex_data)
+    '48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q'
+
+* *hash_from_file(apk_file or dex_file)*
+ 
+.. code-block:: pycon
+
+    >>> import dexofuzzy
+    >>> dexofuzzy.hash_from_file('sample.apk')
+    '48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q'
+    >>> dexofuzzy.hash_from_file('classes.dex')
+    '48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q'
 
 The ``compare`` function returns the match between 2 hashes, an integer value from 0 (no match) to 100.
 
+* *compare(dexofuzzy_1, dexofuzzy_2)*
+
 .. code-block:: pycon
 
+    >>> import dexofuzzy
+    >>> with open('classes.dex', 'rb') as dex:
+    ...     dex_data = dex.read()
+    >>> hash1 = dexofuzzy.hash(dex_data)
+    >>> hash1
+    '48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q'
+    >>> hash2 = dexofuzzy.hash_from_file('classes2.dex')
+    >>> hash2
+    '48:B2KmUCNc2FuGgy9fbdD7uPrEMc0HZj0/zeGn5:B2+Cap3y9pDHMHZ4/zeG5'
     >>> dexofuzzy.compare(hash1, hash2)
     50
-
 
 Tested on
 ---------
 
-* Ubuntu 14.04 LTS, 16.04 LTS, 18.04 LTS
+* CentOS 6.10, 7.7, 8.0
 * Debian 8.11, 9.9, 10.0
 * Linux Mint 3, 18.3, 19.1
-* CentOS 6.10, 7.6
+* Ubuntu 14.04 LTS, 16.04 LTS, 18.04 LTS
 * Windows 7, 10
+
+Publication
+-----------
+* Shinho Lee, Wookhyun Jung, Sangwon Kim, Jihyun Lee, Jun-Seob Kim, `Dexofuzzy: Android Malware Similarity Clustering Method using Opcode Sequence <https://www.virusbulletin.com/uploads/pdf/magazine/2019/201911-Dexofuzzy-Android-Malware-Similarity-Clustering-Method.pdf>`__. Virus Bulletin, November 2019.
 
 License
 -------
 
-Copyright (C) 2019 ESTsecurity.
+Copyright (C) 2019 `ESTsecurity <https://www.estsecurity.com/>`__.
 
 This project is licensed under the GNU General Public License v2 or later (GPLv2+). Please see  `LICENSE <https://github.com/ESTsecurity/Dexofuzzy/blob/master/LICENSE>`__ located at the project's root for more details.
-
-
-
-.. _Dexofuzzy - Android Malware Similarity Clustering Method Using Opcode Sequence: https://www.estsecurity.com/
