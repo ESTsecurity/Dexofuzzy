@@ -27,7 +27,7 @@ setup(
     install_requires=['ssdeep; platform_system!="Windows"'],
     entry_points={
         'console_scripts': [
-            'dexofuzzy=dexofuzzy.cli:execute_from_command_line',
+            'dexofuzzy=dexofuzzy.cli:execute_from_command_line'
         ],
     },
     keywords=[

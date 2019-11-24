@@ -19,7 +19,7 @@
 
 '''
 __title__ = 'dexofuzzy'
-__version__ = '0.0.5'
+__version__ = '0.0.7'
 __description__ = 'Dexofuzzy : Dalvik EXecutable Opcode Fuzzyhash'
 __author__ = 'Shinho Lee, Wookhyun Jung, Sangwon Kim'
 __author_email__ = 'lee1029ng@estsecurity.com, pplan5872@estsecurity.com, bestksw@estsecurity.com'

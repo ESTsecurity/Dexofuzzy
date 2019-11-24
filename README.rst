@@ -1,5 +1,6 @@
 Dexofuzzy: Dalvik EXecutable Opcode Fuzzyhash
 =============================================
+
 Dexofuzzy is a similarity digest hash for Android. It extracts Opcode Sequence from Dex file based on Ssdeep and generates hash that can be used for similarity comparison of Android App. Dexofuzzy created using Dex's opcode sequence can find similar apps by comparing hash.
 
 .. image:: https://img.shields.io/badge/license-GPLv2%2B-green.svg
@@ -16,6 +17,7 @@ Dexofuzzy is a similarity digest hash for Android. It extracts Opcode Sequence f
 
 Requirements
 ------------
+
 Dexofuzzy requires the following modules:
 
 * ssdeep 3.3 or later
@@ -25,7 +27,6 @@ Install
 
 Install on CentOS 6.10, 7.6, 8.0
 ................................
-
 .. code-block:: console
 
     $ yum install epel-release
@@ -61,8 +62,9 @@ Install on Windows 7, 10
 ........................
 
 * The ssdeep DLL binaries for Windows are included in ./dexofuzzy/bin/ directory.
-* included in (https://github.com/intezer/ssdeep-windows)
-* included in (https://github.com/MacDue/ssdeep-windows-32_64)
+
+  * `intezer/ssdeep-windows <https://github.com/intezer/ssdeep-windows>`__  is included.
+  * `MacDue/ssdeep-windows-32_64 <https://github.com/MacDue/ssdeep-windows-32_64>`__  is included.
 
 .. code-block:: console
 
@@ -77,7 +79,7 @@ Usage
                     [-s DEXOFUZZY DEXOFUZZY] [-c CSV_FILENAME] [-j JSON_FILENAME]
                     [-l]
 
-   Dexofuzzy - Dalvik EXecutable Opcode Fuzzyhash v0.0.5
+   Dexofuzzy - Dalvik EXecutable Opcode Fuzzyhash
 
    optional arguments:
       -h, --help                     show this help message and exit
@@ -86,9 +88,9 @@ Usage
       -d SAMPLE_DIRECTORY, --directory SAMPLE_DIRECTORY
                                      the directory of samples to extract dexofuzzy
       -m, --method-fuzzy             extract the fuzzyhash based on method of the sample
-                                     (default use the -f or -d option)
-      -g N, --clustering N           N-gram cluster the dexofuzzy of the sample
-                                     (default use the -d option)
+                                     (must include the -f or -d option by default)
+      -g N, --clustering N           N-gram clustering the dexofuzzy of the sample
+                                     (must include the -d option by default)
       -s DEXOFUZZY DEXOFUZZY, --score DEXOFUZZY DEXOFUZZY
                                      score the dexofuzzy of the sample
       -c CSV_FILENAME, --csv CSV_FILENAME
@@ -100,7 +102,7 @@ Usage
 
 Output Format Example
 .....................
-* *FileName, FileSha256, FileSize, OpcodeHash, Dexofuzzy*
+* *FileName, FileSha256, FileSize, DexoHash, Dexofuzzy*
 
 .. code-block:: console
 
@@ -136,14 +138,14 @@ Output Format Example
             "file_name": "80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835",
             "file_sha256": "80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835",
             "file_size": "42959",
-            "opcode_hash": "d89c3b2c2620b77b1c0df7ef66ecde6d70f30b8a3ca15c21ded4b1ce1e319d38",
+            "dexohash": "d89c3b2c2620b77b1c0df7ef66ecde6d70f30b8a3ca15c21ded4b1ce1e319d38",
             "dexofuzzy": "48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q",
             "clustering": [
                 {
                     "file_name": "80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835",
                     "file_sha256": "80cd7786fa42a257dcaddb44823a97ff5610614d345e5f52af64da0ec3e62835",
                     "file_size": "42959",
-                    "opcode_hash": "d89c3b2c2620b77b1c0df7ef66ecde6d70f30b8a3ca15c21ded4b1ce1e319d38",
+                    "dexohash": "d89c3b2c2620b77b1c0df7ef66ecde6d70f30b8a3ca15c21ded4b1ce1e319d38",
                     "dexofuzzy": "U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY",
                     "signature": "U7uPrEM"
                 },
@@ -151,7 +153,7 @@ Output Format Example
                     "file_name": "ffe8c426c3a8ade648666bb45f194c1e84fb499b126932997c4d50cdfc4cc8f3",
                     "file_sha256": "ffe8c426c3a8ade648666bb45f194c1e84fb499b126932997c4d50cdfc4cc8f3",
                     "file_size": "46504",
-                    "opcode_hash": "4a7039eefb7a8c292bcbd3e9fa232f4e6b136eedb9a114eb32aa360742b3f28f",
+                    "dexohash": "4a7039eefb7a8c292bcbd3e9fa232f4e6b136eedb9a114eb32aa360742b3f28f",
                     "dexofuzzy": "B2KmUCNc2FuGgy9fbdD7uPrEMc0HZj0/zeGn5",
                     "signature": "7uPrEMc"
                 }
@@ -164,9 +166,10 @@ Output Format Example
 
 Python API
 ..........
+
 To compute a Dexofuzzy of ``dex file``, use ``hash`` function:
 
-* *hash(dex_binary_data)*
+* *dexofuzzy(dex_binary_data)*
 
 .. code-block:: pycon
 
@@ -176,7 +179,7 @@ To compute a Dexofuzzy of ``dex file``, use ``hash`` function:
     >>> dexofuzzy.hash(dex_data)
     '48:U7uPrEMc0HZj0/zeGnD2KmUCNc2FuGgy9fY:UHMHZ4/zeGD2+Cap3y9Q'
 
-* *hash_from_file(apk_file or dex_file)*
+* *dexofuzzy_from_file(apk_file or dex_file)*
  
 .. code-block:: pycon
 
@@ -215,11 +218,12 @@ Tested on
 
 Publication
 -----------
-* Shinho Lee, Wookhyun Jung, Sangwon Kim, Jihyun Lee, Jun-Seob Kim, `Dexofuzzy: Android Malware Similarity Clustering Method using Opcode Sequence <https://www.virusbulletin.com/uploads/pdf/magazine/2019/201911-Dexofuzzy-Android-Malware-Similarity-Clustering-Method.pdf>`__. Virus Bulletin, November 2019.
+
+* Shinho Lee, Wookhyun Jung, Sangwon Kim, Jihyun Lee, Jun-Seob Kim, `Dexofuzzy: Android Malware Similarity Clustering Method using Opcode Sequence <https://www.virusbulletin.com/uploads/pdf/magazine/2019/201911-Dexofuzzy-Android-Malware-Similarity-Clustering-Method.pdf>`__. Virus Bulletin, October 2019.
 
 License
 -------
 
-Copyright (C) 2019 `ESTsecurity <https://www.estsecurity.com/>`__.
-
 This project is licensed under the GNU General Public License v2 or later (GPLv2+). Please see  `LICENSE <https://github.com/ESTsecurity/Dexofuzzy/blob/master/LICENSE>`__ located at the project's root for more details.
+
+Copyright (C) 2019 `ESTsecurity <https://www.estsecurity.com/>`__.

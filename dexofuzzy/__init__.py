@@ -55,8 +55,8 @@ Dexofuzzy API usage:
     >>> dexofuzzy.compare(hash1, hash2)
     50
 
-This project is licensed under the GNU General Public License v2 or later (GPLv2+)
 Copyright (C) 2019 ESTsecurity (https://github.com/ESTsecurity/Dexofuzzy)
+This project is licensed under the GNU General Public License v2 or later (GPLv2+)
 """
 
 # Internal packages

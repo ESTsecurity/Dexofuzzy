@@ -59,11 +59,11 @@ class Command:
         parser.add_argument(
                     "-m", "--method-fuzzy", action="store_true",
                     help="extract the fuzzyhash based on method of the sample "
-                    + "(default use the -f or -d option)")
+                    + "(must include the -f or -d option by default)")
         parser.add_argument(
                     "-g", "--clustering", metavar='N', type=int,
-                    help="N-gram cluster the dexofuzzy of the sample "
-                    + "(default use the -d option)")
+                    help="N-gram clustering the dexofuzzy of the sample "
+                    + "(must include the -d option by default)")
 
         parser.add_argument(
                     "-s", "--score", metavar='DEXOFUZZY', nargs=2,
@@ -98,7 +98,7 @@ class Command:
                 if result is not None:
                     print("{},{},{},{},{}".format(
                                     result["file_name"], result["file_sha256"],
-                                    result["file_size"], result["opcode_hash"],
+                                    result["file_size"], result["dexohash"],
                                     result["dexofuzzy"]))
 
                     if self.args.method_fuzzy:
@@ -111,7 +111,7 @@ class Command:
             if result is not None:
                 print("{},{},{},{},{}".format(
                                     result["file_name"], result["file_sha256"],
-                                    result["file_size"], result["opcode_hash"],
+                                    result["file_size"], result["dexohash"],
                                     result["dexofuzzy"]))
 
                 if self.args.method_fuzzy:
@@ -128,7 +128,7 @@ class Command:
             try:
                 with open(self.args.csv, "w", newline="") as fd:
                     fieldnames = ["file_name", "file_sha256", "file_size",
-                                  "opcode_hash", "dexofuzzy"]
+                                  "dexohash", "dexofuzzy"]
 
                     writer = csv.DictWriter(fd, fieldnames=fieldnames)
                     writer.writeheader()
@@ -137,7 +137,7 @@ class Command:
                         row["file_name"] = output["file_name"]
                         row["file_sha256"] = output["file_sha256"]
                         row["file_size"] = output["file_size"]
-                        row["opcode_hash"] = output["opcode_hash"]
+                        row["dexohash"] = output["dexohash"]
                         row["dexofuzzy"] = output["dexofuzzy"]
                         writer.writerow(row)
 
@@ -185,7 +185,7 @@ class Command:
             print("The directory not found")
 
         sample_path = os.path.join(os.getcwd(), sample_dir)
-        for root, __, files in os.walk(sample_path):
+        for root, _, files in os.walk(sample_path):
             for file in files:
                 file_path = os.path.join(root, file)
                 report = self.__get_dexofuzzy(file_path)
@@ -195,7 +195,7 @@ class Command:
                     result["file_name"] = file
                     result["file_sha256"] = self.__get_sha256(file_path)
                     result["file_size"] = self.__get_file_size(file_path)
-                    result["opcode_hash"] = report["opcode_hash"]
+                    result["dexohash"] = report["dexohash"]
                     result["dexofuzzy"] = report["dexofuzzy"]
 
                     if self.args.method_fuzzy:
@@ -214,7 +214,7 @@ class Command:
             result["file_name"] = sample_file
             result["file_sha256"] = self.__get_sha256(sample_file)
             result["file_size"] = self.__get_file_size(sample_file)
-            result["opcode_hash"] = report["opcode_hash"]
+            result["dexohash"] = report["dexohash"]
             result["dexofuzzy"] = report["dexofuzzy"]
 
             if self.args.method_fuzzy:
@@ -265,7 +265,7 @@ class Command:
                     method_fuzzy_list.append(method_fuzzy)
 
                 result = {}
-                result["opcode_hash"] = hashlib.sha256(opcode_sum.encode(
+                result["dexohash"] = hashlib.sha256(opcode_sum.encode(
                                                         "UTF-8")).hexdigest()
                 result["dexofuzzy"] = ssdeep.hash(feature, encoding="UTF-8")
 
@@ -294,7 +294,7 @@ class Command:
                         clustering["file_name"] = destination["file_name"]
                         clustering["file_sha256"] = destination["file_sha256"]
                         clustering["file_size"] = destination["file_size"]
-                        clustering["opcode_hash"] = destination["opcode_hash"]
+                        clustering["dexohash"] = destination["dexohash"]
                         clustering["dexofuzzy"] = dst_dexofuzzy
                         clustering["signature"] = signature
                         source["clustering"].append(clustering)

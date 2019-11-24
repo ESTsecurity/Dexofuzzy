@@ -75,9 +75,6 @@ class GenerateDexofuzzy:
 
                 return self.method_opcode_sequence_list
 
-            else:
-                raise GenerateDexofuzzyError("The file format isn't supported")
-
         except Exception:
             raise GenerateDexofuzzyError("Unable to extract dexfile opcode")
 
@@ -92,8 +89,7 @@ class GenerateDexofuzzy:
 
                 if not dex_list:
                     raise GenerateDexofuzzyError(
-                                    "Couldn't find dex format in APK file")
-                    return
+                                "Unable to find 'classes.dex' in the APK file")
 
                 for dex_name in sorted(dex_list):
                     with ZipData.open(dex_name) as dex:
@@ -132,8 +128,7 @@ class GenerateDexofuzzy:
     def __get_dexofuzzy(self):
         feature = ""
         for opcode in self.method_opcode_sequence_list:
-            feature += ssdeep.hash(opcode,
-                                   encoding="UTF-8").split(":")[1]
+            feature += ssdeep.hash(opcode, encoding="UTF-8").split(":")[1]
 
         dexofuzzy = ssdeep.hash(feature, encoding="UTF-8")
 
@@ -158,9 +153,6 @@ class GenerateDexofuzzy:
             self.__dex_to_smali(dex, header, string_ids, type_ids, class_defs)
 
             return self.method_opcode_sequence_list
-
-        else:
-            raise GenerateDexofuzzyError("The file isn't dex format")
 
     def __get_header(self, dex):
         magic_number = dex[0x00:0x08]
@@ -558,7 +550,6 @@ class GenerateDexofuzzy:
                     break
 
         except Exception:
-            raise GenerateDexofuzzyError("Unable to extract opcode")
             return opcode
 
         return opcode
@@ -585,7 +576,6 @@ class GenerateDexofuzzy:
                 offset += 1
 
         except Exception:
-            raise GenerateDexofuzzyError("Unable to extract format_10x")
             return offset
 
         return offset
@@ -651,7 +641,7 @@ class GenerateDexofuzzy:
         return offset
 
     def __format_30t(self, _, offset):
-        offset += 5
+        offset += 6
         return offset
 
     def __format_31c(self, _, offset):
